@@ -6,16 +6,11 @@
 @plugindesc Hệ thống NPC thu mua vật phẩm
 @help 
 // * Thêm tính năng random theo range
+// * Lưu dữ liệu random bằng variable
+// * Kiểm tra đã hoàn thành hay chưa bằng switch
 Hướng dẫn:
-- Gọi Scene bằng cách sử dụng Plugin Command: ordered open đối_số.
-- đối_số có 2 kiểu giá trị: "x" (x là số), hoặc "random".
-- đối_số ở đây nếu để trống thì sẽ dựa vào biến số "Ordered Variable".
-- Ví dụ : ordered open 1 (gọi ordersed 1)
-          ordered open random min max (gọi ordered ngẫu nhiên có giá trị trong khoảng từ min -> max)
 
 - Chỉnh sửa danh sách thu mua vật phẩm ở dưới dòng thứ 170.
-
-- Bạn có thể kiểm tra tình trạng đã bán hay chưa bằng script: daBan. Script này sẽ trả về true or false;
 
 ** Bản quyền thuộc về Relife Online.
 
@@ -58,7 +53,8 @@ var itemsID = [];
 var amount = [];
 var price = 0;
 var canBuy = false;
-var daBan = false;
+var congtac = 0;
+var bienso = 0;
 // Game_Interpreter
 var _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
 Game_Interpreter.prototype.pluginCommand = function(command, args) {
@@ -68,12 +64,22 @@ Game_Interpreter.prototype.pluginCommand = function(command, args) {
         {
             case 'open':
                 if (args[1] != null) {
-                    if (args[1] != "random")
+                    if (args[1] != "random") {
                         ordered = Number(args[1]);
-                    else {
-                        ordered = Math.floor(Math.random() * (Number(args[3]) - Number(args[2]) + 1)) + Number(args[2]);
+                        congtac = Number(args[2]); 
+                        bienso = 0; 
                     }
-                    
+                    else {
+                        congtac = Number(args[4]); 
+                        bienso = Number(args[5]);   
+                        if ($gameVariables.value(bienso) == 0) {
+                            ordered = Math.floor(Math.random() * (Number(args[3]) - Number(args[2]) + 1)) + Number(args[2]);
+                            $gameVariables.setValue(bienso,ordered);
+                        }
+                        else {
+                            ordered = $gameVariables.value(bienso);
+                        }
+                    }
                 SceneManager.push(Scene_Ordered);
                 }
                 break;
@@ -147,17 +153,18 @@ Scene_Ordered.prototype.dongY = function() {
         });
         $gameMessage.setBackground(0);
         $gameMessage.add("Cảm ơn đã hợp tác!\\! Nhận được \\c[17]+"+price+" "+$dataSystem.currencyUnit+"\\i[314]");
-        SceneManager.pop();
-        daBan = true;
+        $gameSwitches.setValue(congtac,true);
+        if (bienso!=0) {
+            $gameVariables.setValue(bienso,0);
+        }
+            SceneManager.pop();
     }
     else {
-        daBan = false;
         this._confirmWindow.activate();
     }
 }
 
 Scene_Ordered.prototype.cancel = function() {
-    daBan = false;
     SceneManager.pop();
 }
 
