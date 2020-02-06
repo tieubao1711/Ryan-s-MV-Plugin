@@ -1,18 +1,9 @@
 //======================================================================
-// ORDERED SYSTEM <<RELIFE ONLINE>> 02/04/2020 Version 0.2
+// ORDERED SYSTEM <<RELIFE ONLINE>> 02/04/2020
 //=======================================================================
 
 /*:
 @plugindesc Hệ thống NPC thu mua vật phẩm
-@help 
-// * Thêm tính năng random theo range
-// * Lưu dữ liệu random bằng variable
-// * Kiểm tra đã hoàn thành hay chưa bằng switch
-Hướng dẫn:
-
-- Chỉnh sửa danh sách thu mua vật phẩm ở dưới dòng thứ 170.
-
-** Bản quyền thuộc về Relife Online.
 
 @author tranxuanquang (Ryan)
 
@@ -36,6 +27,32 @@ Hướng dẫn:
 
 @param Cancel Button Text
 @default Chờ chút
+*
+@help 
+* --------------------------------------------------------------------------------
+* Terms of Use
+* --------------------------------------------------------------------------------
+* Credit tranxuanquang nếu bạn sử dụng trong dự án.
+* --------------------------------------------------------------------------------
+* Version 0.3 - Chỉnh sửa lần cuối 02/06/2020
+* --------------------------------------------------------------------------------
+*
+* --------------------------------------------------------------------------------
+*
+** Bản quyền thuộc về Relife Online.
+* --------------------------------------------------------------------------------
+* Plugin Commands
+* --------------------------------------------------------------------------------
+* ordered open ARG SWITCH
+* ARG - tham số được lấy dữ liệu dưới dòng 170
+* SWITCH - khi đơn hàng được bán thì switch này sẽ được bật
+* 
+* ordered open random MIN MAX VAR SWITCH
+* MIN/MAX - sẽ random trong khoảng từ [MIN -> MAX]
+* VAR - biến này sẽ lưu giá trị random lúc nãy.
+* SWITCH - khi đơn hàng được bán thì switch này sẽ được bật
+*
+* --------------------------------------------------------------------------------
 */
 
 var parameters = PluginManager.parameters('OrderedSystem');
@@ -56,9 +73,9 @@ var canBuy = false;
 var congtac = 0;
 var bienso = 0;
 // Game_Interpreter
-var _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
+var _Game_Ordered__pluginCommand = Game_Interpreter.prototype.pluginCommand;
 Game_Interpreter.prototype.pluginCommand = function(command, args) {
-    _Game_Interpreter_pluginCommand.call(this, command, args);
+    _Game_Ordered__pluginCommand.call(this, command, args);
     if (command === 'ordered') {
         switch(args[0])
         {
