@@ -33,7 +33,7 @@
 * --------------------------------------------------------------------------------
 * Credit tranxuanquang nếu bạn sử dụng trong dự án.
 * --------------------------------------------------------------------------------
-* Version 1.0
+* Version 1.1 - Chỉnh sửa lần cuối 02/06/2020
 * --------------------------------------------------------------------------------
 *
 * --------------------------------------------------------------------------------
@@ -90,9 +90,9 @@ var isfull = false;
 var crsLevel = 0;
 
 // Game_Interpreter
-var _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
+var _Game_Crafting__pluginCommand = Game_Interpreter.prototype.pluginCommand;
 Game_Interpreter.prototype.pluginCommand = function(command, args) {
-    _Game_Interpreter_pluginCommand.call(this, command, args);
+    _Game_Crafting__pluginCommand.call(this, command, args);
     if (command === 'crsCall') {
         switch(args[0])
         {
@@ -392,7 +392,7 @@ Window_CraftingList.prototype.itemHeight = function() {
     var innerHeight = this.height - this.padding * 2;
     return Math.floor(innerHeight / this.maxVisibleItems());
 };
-
+/*
 Window_CraftingList.prototype.isEnable = function(index) {
     crsLevel = (catIndex>0) ? cookingLvl : craftLvl;
     if (crsLevel < Number(checkLvl.exec($dataItems[presentItems[index]].note)[1]))
@@ -400,9 +400,9 @@ Window_CraftingList.prototype.isEnable = function(index) {
     else
         return true;
 }
-
+*/
 Window_CraftingList.prototype.drawItem = function(index) {
-    this.changePaintOpacity(this.isEnable(index));
+    //this.changePaintOpacity(this.isEnable(index));
     var rect = this.itemRectForText(index);
     this.contents.fontSize = 22;
     this.contents.fontBold = false;
