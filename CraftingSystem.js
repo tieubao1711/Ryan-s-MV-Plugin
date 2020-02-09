@@ -1,5 +1,5 @@
 //=============================================================================
-// CRAFTING SYSTEM <<RELIFE ONLINE>> Version 1.0
+// CRAFTING SYSTEM <<RELIFE ONLINE>> Version 1.3
 //=============================================================================
 
 /*:
@@ -7,6 +7,9 @@
 * Release 06/02/2020
 * @author tranxuanquang (Ryan)
 * 
+*
+* @param Use Level
+* @default true
 *
 * @param Crafting Level Variable
 * @default 1
@@ -26,6 +29,14 @@
 * @param Cooking Title Text
 * @default Nấu Ăn
 *
+* @param Craft Ok Button Text
+* @default Tạo
+*
+* @param Cooking Ok Button Text
+* @default Nấu
+*
+* @param Cancel Button Text
+* @default Thôi
 * 
 * @help 
 * --------------------------------------------------------------------------------
@@ -33,7 +44,7 @@
 * --------------------------------------------------------------------------------
 * Credit tranxuanquang nếu bạn sử dụng trong dự án.
 * --------------------------------------------------------------------------------
-* Version 1.1 - Chỉnh sửa lần cuối 02/06/2020
+* Version 1.3 - Chỉnh sửa lần cuối 09/02/2020
 * --------------------------------------------------------------------------------
 *
 * --------------------------------------------------------------------------------
@@ -64,18 +75,24 @@
 *        crsCall crafting normal vip1 vip2  (hiển thị các item craft có TEXT "normal" "vip1" "vip2")
 * --------------------------------------------------------------------------------
 */
-
+(function() {
 var parameters = PluginManager.parameters('CraftingSystem');
 var craftTitleText = parameters['Crafting Title Text'] || "Chế Tạo";
 var cookingTitleText = parameters['Cooking Title Text'] || "Nấu Ăn";
+var btnCraftOkText = parameters['Craft Ok Button Text'] || "Tạo";
+var btnCookOkText = parameters['Cooking Ok Button Text'] || "Nấu";
+var btnCancelText = parameters['Cancel Button Text'] || "Thôi";
+var useLevel = parameters['Use Level'] || "true";
 var catIndex = 0;
 
 var checkCat = /<\s*(.*)\s*:\s*(.*)\s*>/i;
 var checkIgID = /<ingredients\s*:\s*(.*)>/i;
 var checkAmount = /<amounts\s*:\s*(.*)>/i;
 var checkLvl = /<lvl\s*:\s*(\d+)>/i;
+var checkGold = /<gold\s*:\s*(.*)\s*>/i;
 var Category = ['crafting','cooking'];
 var titleMenu = "";
+var btnOkText = "";
 
 var craftLvlVar = Number(parameters['Crafting Level Variable'] || 1);
 var cookLvlVar = Number(parameters['Cooking Level Variable'] || 2);
@@ -98,6 +115,7 @@ Game_Interpreter.prototype.pluginCommand = function(command, args) {
         {
             case Category[0]:
                 titleMenu = craftTitleText;
+                btnOkText = btnCraftOkText;
                 catIndex = 0;
                 _x = 1;
                 _arr = [];
@@ -109,6 +127,7 @@ Game_Interpreter.prototype.pluginCommand = function(command, args) {
                 break;
             case Category[1]:
                 titleMenu = cookingTitleText;
+                btnOkText = btnCookOkText;
                 catIndex = 1;
                 _x = 1;
                 _arr = [];
@@ -160,7 +179,9 @@ Scene_Crafting.prototype.create = function() {
     Scene_MenuBase.prototype.create.call(this);
     this.createCraftingListWindow();
     this.createCraftingTitleWindow();
-    this.createCraftingLevelWindow();
+    if (useLevel == "true") {
+        this.createCraftingLevelWindow();
+    }
     this.createInfoWindow();
     this.createConfirmWindow();
     this.createPopupWindow();
@@ -180,9 +201,15 @@ Scene_Crafting.prototype.createCraftingListWindow = function() {
 };
 
 Scene_Crafting.prototype.createCraftingTitleWindow = function() {
-    var x = this._craftinglistWindow.x + (this._craftinglistWindow.width*1/8);
+    if (useLevel == "true") {
+        var x = this._craftinglistWindow.x + (this._craftinglistWindow.width*1/8);
+        var w = this._craftinglistWindow.width*1/2; 
+    }
+    else {
+        var x = this._craftinglistWindow.x + (this._craftinglistWindow.width*1/4);
+        var w = this._craftinglistWindow.width*1/2; 
+    }
     var y = this._craftinglistWindow.y - 54;
-    var w = this._craftinglistWindow.width*1/2; 
     var h = 54;
     this._craftingtitleWindow = new Window_CraftingTitle(x,y,w,h);
     this.addWindow(this._craftingtitleWindow);
@@ -209,7 +236,7 @@ Scene_Crafting.prototype.createInfoWindow = function() {
 Scene_Crafting.prototype.createConfirmWindow = function(){
     var x = this._craftinglistWindow.x;
     var y = this._infoWindow.y+this._infoWindow.height;
-    this._confirmWindow = new Window_Confirm(x,y);
+    this._confirmWindow = new Window_CraftConfirm(x,y);
     this._confirmWindow.setHandler('ok',this.openPopup.bind(this));
     this._confirmWindow.setHandler("cancel",this.proccessCancel.bind(this));
     this.addWindow(this._confirmWindow);
@@ -226,28 +253,46 @@ Scene_Crafting.prototype.createPopupWindow = function(){
 Scene_Crafting.prototype.openPopup = function() {
     _igID = (checkIgID.exec($dataItems[presentItems[this._craftinglistWindow.index()]].note))[1].split(",");
     _amount = (checkAmount.exec($dataItems[presentItems[this._craftinglistWindow.index()]].note))[1].split(",");
-    _lvl = (catIndex>0)? cookingLvl : craftLvl;
-    _expVar = (catIndex>0)? cookEXPVar : craftEXPVar;
     _tit = (catIndex>0)? cookingTitleText : craftTitleText;
-    if (_lvl >= Number(checkLvl.exec($dataItems[presentItems[this._craftinglistWindow.index()]].note)[1])) {
-        if (isfull) {              
-            for (var j=1; j <= Number(_igID.length);j++) {
-                $gameParty.loseItem($dataItems[Number(_igID[j-1])],Number(_amount[j-1]));
-            }
-            $gameParty.gainItem($dataItems[presentItems[this._craftinglistWindow.index()]],1);
-            _expGain = /<\s*gainEXP\s*:\s*(.*)\s*>/i.exec($dataItems[presentItems[this._craftinglistWindow.index()]].note);
-            $gameVariables.setValue(_expVar,$gameVariables.value(_expVar)+Number(_expGain[1]));
-            console.log(_expVar+" "+_expGain);
-            this._popupWindow.setText(presentItems[this._craftinglistWindow.index()]);
-            this._popupWindow.activate();
+    if (useLevel == "true") {
+        _lvl = (catIndex>0)? cookingLvl : craftLvl;
+        _expVar = (catIndex>0)? cookEXPVar : craftEXPVar;
+        if (_lvl >= Number(checkLvl.exec($dataItems[presentItems[this._craftinglistWindow.index()]].note)[1])) {
+            this.checkFull();
         }
         else {
-            this._popupWindow.setTextFail("không đủ nguyên liệu!");
+            this._popupWindow.setTextFail("cấp độ "+_tit+" chưa đủ!");
             this._popupWindow.activate();
         }
     }
     else {
-        this._popupWindow.setTextFail("cấp độ "+_tit+" chưa đủ!");
+        this.checkFull();
+    }
+}
+
+Scene_Crafting.prototype.checkFull = function() {
+    if (isfull) {           
+        if ($gameParty._gold >= Number(checkGold.exec($dataItems[presentItems[this._craftinglistWindow.index()]].note)[1])) { 
+            for (var j=1; j <= Number(_igID.length);j++) {
+                $gameParty.loseItem($dataItems[Number(_igID[j-1])],Number(_amount[j-1]));
+            }
+            $gameParty.gainItem($dataItems[presentItems[this._craftinglistWindow.index()]],1);
+            $gameParty.loseGold(Number(checkGold.exec($dataItems[presentItems[this._craftinglistWindow.index()]].note)[1]));
+            if (useLevel == "true") {
+                _expGain = /<\s*gainEXP\s*:\s*(.*)\s*>/i.exec($dataItems[presentItems[this._craftinglistWindow.index()]].note);
+                $gameVariables.setValue(_expVar,$gameVariables.value(_expVar)+Number(_expGain[1]));
+                console.log(_expVar+" "+_expGain);
+            }
+            this._popupWindow.setText(presentItems[this._craftinglistWindow.index()]);
+            this._popupWindow.activate();
+        }
+        else {
+            this._popupWindow.setTextFail("không đủ vàng!");
+            this._popupWindow.activate();
+        }
+    }
+    else {
+        this._popupWindow.setTextFail("không đủ nguyên liệu!");
         this._popupWindow.activate();
     }
 }
@@ -410,8 +455,10 @@ Window_CraftingList.prototype.drawItem = function(index) {
     this.drawText($dataItems[presentItems[index]].name,rect.x+40,rect.y+4,this.width-this.padding,"left");
     this.contents.fontSize = 18;
     this.contents.fontBold = false;
-    _lvl = checkLvl.exec($dataItems[presentItems[index]].note);
-    this.drawText("Lv."+_lvl[1],rect.x,rect.y+4,this.width-this.padding*3,"right");
+    if (useLevel == "true") {
+        _lvl = checkLvl.exec($dataItems[presentItems[index]].note);
+        this.drawText("Lv."+_lvl[1],rect.x,rect.y+4,this.width-this.padding*3,"right");
+    }
 };
 
 Window_CraftingList.prototype.refresh = function() {
@@ -444,8 +491,14 @@ Window_Info.prototype.drawAllItems = function(index) {
         this.drawText($dataItems[index].name,48,8,this.width-this.padding,"left");
         this.contents.fontSize = 18;
         _lvl = checkLvl.exec($dataItems[index].note);
-        this.changeTextColor("#3392FF");
-        this.drawText("Cấp độ: "+_lvl[1],-20,8,this.width-this.padding,"right");
+        if (useLevel == "true") {
+            this.changeTextColor(this.normalColor());
+            this.drawText("Lv: "+_lvl[1],-120,8,this.width-this.padding,"right");
+        }
+        this.changeTextColor("#0095ff");
+        this.drawText(checkGold.exec($dataItems[index].note)[1],-35,8,this.width-this.padding,"right");
+        this.changeTextColor("#ffee00");
+        this.drawText($dataSystem.currencyUnit,-20,8,this.width-this.padding,"right");
         this.drawHorzLine(8,50,this.width-this.padding-16);
         this.contents.fontSize = 20;
         _string = $dataItems[index].description;
@@ -473,7 +526,7 @@ Window_Info.prototype.drawAllItems = function(index) {
             this.drawText(_desc[j],8,56+24*j);
         }
         this.drawHorzLine(8,56+22*5,this.width-this.padding-16);
-        this.changeTextColor("#3392FF");
+        this.changeTextColor("#0095ff");
         this.drawText("Nguyên liệu:",8,168,this.width-this.padding*2,"left");
         _igID = (checkIgID.exec($dataItems[index].note))[1].split(",");
         _amount = (checkAmount.exec($dataItems[index].note))[1].split(",");
@@ -504,29 +557,29 @@ Window_Info.prototype.refresh = function() {
 
 // CONFIRM
 
-function Window_Confirm() {
+function Window_CraftConfirm() {
     this.initialize.apply(this,arguments);
 }
-Window_Confirm.prototype = Object.create(Window_HorzCommand.prototype);
-Window_Confirm.prototype.constructor = Window_Confirm;
+Window_CraftConfirm.prototype = Object.create(Window_HorzCommand.prototype);
+Window_CraftConfirm.prototype.constructor = Window_CraftConfirm;
 
-Window_Confirm.prototype.initialize = function(x,y) {
+Window_CraftConfirm.prototype.initialize = function(x,y) {
     Window_HorzCommand.prototype.initialize.call(this,x,y);
 }	
 
-Window_Confirm.prototype.windowWidth = function() {
+Window_CraftConfirm.prototype.windowWidth = function() {
     return Graphics.boxWidth*3/7;
 }
 
-Window_Confirm.prototype.maxCols = function() {
+Window_CraftConfirm.prototype.maxCols = function() {
     return 2;
 }
-Window_Confirm.prototype.standardPadding = function() {
+Window_CraftConfirm.prototype.standardPadding = function() {
     return 8;
 }
-Window_Confirm.prototype.makeCommandList = function() {
-    this.addCommand('Cook','cook');
-    this.addCommand('Cancel',"cancel");
+Window_CraftConfirm.prototype.makeCommandList = function() {
+    this.addCommand(btnOkText,'cook');
+    this.addCommand(btnCancelText,"cancel");
 }
 
 // ----- POPUP ----- //
@@ -600,3 +653,4 @@ Window_Info.prototype.drawHorzLine = function(x, y, l) {
     this.contents.paintOpacity = 255;
 };
 // --- END DRAW LINE ---
+})();
