@@ -7,8 +7,14 @@
 * Release 16/02/2020
 * @author tranxuanquang (Ryan)
 *
-* @param Use Level
-* @default true
+* @param Tool Variable
+* @default 2
+*
+* @param Skin Variable
+* @default 3
+*
+* @param Vehicle Variable
+* @default 4
 * 
 * @help 
 * --------------------------------------------------------------------------------
@@ -40,9 +46,11 @@
 * SceneManager.pop() hoặc tắt bằng chuột phải
 * --------------------------------------------------------------------------------
 */
+
+var parameters = PluginManager.parameters('InventoryAdvanced');
 var EquipSlot = ['Dụng cụ','Quần áo','Xe cộ'];
 var EquipCmd = ['tool','skin','vehicle'];
-var EquipVar = [2,3,4];
+var EquipVar = [Number(parameters['Tool Variable'] || 2),Number(parameters['Skin Variable'] || 3),Number(parameters['Vehicle Variable'] || 4)];
 
 var checkInvType = /<invType\s*:\s*(.*)>/i;
 var checkInvHP = /<invHP\s*:\s*(\d+)>/i;
