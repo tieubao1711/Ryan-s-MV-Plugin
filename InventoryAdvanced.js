@@ -152,15 +152,14 @@ Scene_InventoryAdvanced.prototype.update = function(){
 	if (this.lengthChange != $gameParty.allItems().length) {
 		this.lengthChange = $gameParty.allItems().length;
 		this.checkAll = $gameParty.allItems();
-		checkAgain:
 		for (var i=0; i<this.lengthChange;i++){
 			if (checkInvType.exec(this.checkAll[i].note)) {
 				if ($gameParty.numItems(this.checkAll[i]) > 1) {
 					$gameParty.loseItem(this.checkAll[i],$gameParty.numItems(this.checkAll[i])-1);
-					this._itemList.refresh();
 				}
 			}
 		}
+		this._itemList.refresh();
 	}
 
 	if (this._lTemp != this._itemList.index()) {
@@ -259,8 +258,10 @@ Scene_InventoryAdvanced.prototype.cmdEquip = function() {
 	$gameParty.loseItem(this._itemList._data[this._itemList.index()],1);
 	if (this.itemType == 'canBuff') {
 		if (this._itemList._data[this._itemList.index()].effects && this._itemList._data[this._itemList.index()].effects[0]['code'])
-			if (this._itemList._data[this._itemList.index()].effects[0]['code'] == 44) 
+			if (this._itemList._data[this._itemList.index()].effects[0]['code'] == 44) {
 				$gameTemp.reserveCommonEvent(this._itemList._data[this._itemList.index()].effects[0]['dataId']); 
+				SceneManager.pop();
+			}
 	}
 	else {
 		if (this.itemType == 'canEquip') {
@@ -282,9 +283,9 @@ Scene_InventoryAdvanced.prototype.cmdEquip = function() {
 			}
 		}
 	}
-	this._itemList.refresh();
 	this._itemList.deselect();
 	this._itemEquip.refresh();
+	this._itemList.refresh();
 	this.cmdCancel();
 }
 
