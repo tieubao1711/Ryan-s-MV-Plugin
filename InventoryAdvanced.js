@@ -1,5 +1,5 @@
 //=============================================================================
-// RYAN INVENTORY ADVANCED - Version 1.0
+// RYAN INVENTORY ADVANCED - Version 1.2
 //=============================================================================
 
 /*:
@@ -22,7 +22,7 @@
 * --------------------------------------------------------------------------------
 * Credit tranxuanquang nếu bạn sử dụng trong dự án.
 * --------------------------------------------------------------------------------
-*
+* Chỉnh sửa lần cuối 18/02/2020
 * --------------------------------------------------------------------------------
 * Trong "Item -> Notetag". Sử dụng các tag sau:
 * --------------------------------------------------------------------------------
@@ -37,25 +37,45 @@
 						Chỉ sử dụng với TYPE là skin.
 *
 * --------------------------------------------------------------------------------
+* PLUGIN COMMAND:
+* --------------------------------------------------------------------------------
+* Inventory open
+* --------------------------------------------------------------------------------
+* Inventory close
+* --------------------------------------------------------------------------------
 * SCRIPT CALL:
-* --------------------------------------------------------------------------------
-* SceneManager.push(Scene_InventoryAdvanced)
-* --------------------------------------------------------------------------------
-* SCRIPT DISPOSE:
-* --------------------------------------------------------------------------------
-* SceneManager.pop() hoặc tắt bằng chuột phải
+* $toolCat[0] - Kiểm tra đang trang bị loại dụng cụ gì
+* $toolCat[1] - Kiểm tra variable của dụng cụ đang trang bị
 * --------------------------------------------------------------------------------
 */
+var $toolCat = [];
 
+(function() {
 var parameters = PluginManager.parameters('InventoryAdvanced');
 var EquipSlot = ['Dụng cụ','Quần áo','Xe cộ'];
 var EquipCmd = ['tool','skin','vehicle'];
 var EquipVar = [Number(parameters['Tool Variable'] || 2),Number(parameters['Skin Variable'] || 3),Number(parameters['Vehicle Variable'] || 4)];
 
-var checkInvType = /<invType\s*:\s*(.*)>/i;
+var checkInvType = /<invType\s*:\s*(\w+)-?(\d+)?>/i;
 var checkInvHP = /<invHP\s*:\s*(\d+)>/i;
 var checkInvVar = /<invVar\s*:\s*(\d+)>/i;
 var checkInvChar = /<invChar\s*:\s*(.*),(.*)>/
+
+// Game_Interpreter
+var _Game_InvAdv_pluginCommand = Game_Interpreter.prototype.pluginCommand;
+Game_Interpreter.prototype.pluginCommand = function(command, args) {
+    _Game_InvAdv_pluginCommand.call(this, command, args);
+    if (command === 'Inventory') {
+		switch (args[0]) {
+			case 'open':
+				SceneManager.push(Scene_InventoryAdvanced);
+				break;
+			case 'close':
+				SceneManager.pop();
+				break;
+		}
+    }
+};
 
 // MAIN SCENE
 function Scene_InventoryAdvanced() {
@@ -132,6 +152,7 @@ Scene_InventoryAdvanced.prototype.update = function(){
 	if (this.lengthChange != $gameParty.allItems().length) {
 		this.lengthChange = $gameParty.allItems().length;
 		this.checkAll = $gameParty.allItems();
+		checkAgain:
 		for (var i=0; i<this.lengthChange;i++){
 			if (checkInvType.exec(this.checkAll[i].note)) {
 				if ($gameParty.numItems(this.checkAll[i]) > 1) {
@@ -184,10 +205,6 @@ Scene_InventoryAdvanced.prototype.update = function(){
 				this.charImg = null;
 			}
 		}
-		if (!this.drawWindowDesc) {
-			this.drawWindowDesc = true;
-			this._itemDesc.drawAllItems(this.itemTemp? this.itemTemp : null,this.charImg,this.charIndex);
-		}
 		this._itemDesc.drawAllItems(this.itemTemp? this.itemTemp : null,this.charImg,this.charIndex);
 	}
 	if (!this._itemDesc.height) {
@@ -198,18 +215,31 @@ Scene_InventoryAdvanced.prototype.update = function(){
 Scene_InventoryAdvanced.prototype.onOk = function() {
 	this.type = checkInvType.exec(this._itemList._data[this._itemList.index()].note);
 	if (this.type && (this.type[1] == EquipCmd[0] || this.type[1] == EquipCmd[1] || this.type[1] == EquipCmd[2])) {
-		this._equipcmd.x = this._itemList.x + this._itemList.itemRect(this._itemList.index())['x'] + 40;
-		this._equipcmd.y = this._itemList.y + this._itemList.itemRect(this._itemList.index())['y'] + 40;
-		this._itemList.deactivate();
-		this._itemEquip.deactivate();
-		this._equipcmd.activate();
-		this._equipcmd.select(0);
-		this._equipcmd.show();
+		this.okProcessor('Trang bị');
+		this.itemType = 'canEquip';
 	}
 	else {
-		this._itemList.activate();
-		this._itemEquip.activate();
+		if (this._itemList._data[this._itemList.index()].consumable) {
+			this.okProcessor('Sử dụng');
+			this.itemType = 'canBuff';
+		}
+		else {
+			this._itemList.activate();
+			this._itemEquip.activate();
+		}
 	}
+}
+
+Scene_InventoryAdvanced.prototype.okProcessor = function(nameCmd) {
+	this._equipcmd.x = this._itemList.x + this._itemList.itemRect(this._itemList.index())['x'] + 40;
+	this._equipcmd.y = this._itemList.y + this._itemList.itemRect(this._itemList.index())['y'] + 40;
+	this._itemList.deactivate();
+	this._itemEquip.deactivate();
+	this._equipcmd.setName(nameCmd);
+	this._equipcmd.refresh();
+	this._equipcmd.activate();
+	this._equipcmd.select(0);
+	this._equipcmd.show();
 }
 
 Scene_InventoryAdvanced.prototype.onCancel = function() {
@@ -227,15 +257,28 @@ Scene_InventoryAdvanced.prototype.onCancel = function() {
 
 Scene_InventoryAdvanced.prototype.cmdEquip = function() {
 	$gameParty.loseItem(this._itemList._data[this._itemList.index()],1);
-	for (var i=0; i < EquipSlot.length; i++) {
-		if (this.type && this.type[1] == EquipCmd[i]) {
-			if ($gameVariables.value(EquipVar[i]) > 0 && $dataItems[$gameVariables.value(EquipVar[i])])
-				$gameParty.gainItem($dataItems[$gameVariables.value(EquipVar[i])],1);
-			
-			$gameVariables.setValue(EquipVar[i],this._itemList._data[this._itemList.index()].id);
-			if (this.type[1] == EquipCmd[1]) {
-				$gameActors.actor(1).setCharacterImage(this.charImg,this.charIndex);
-				$gamePlayer.refresh();
+	if (this.itemType == 'canBuff') {
+		if (this._itemList._data[this._itemList.index()].effects && this._itemList._data[this._itemList.index()].effects[0]['code'])
+			if (this._itemList._data[this._itemList.index()].effects[0]['code'] == 44) 
+				$gameTemp.reserveCommonEvent(this._itemList._data[this._itemList.index()].effects[0]['dataId']); 
+	}
+	else {
+		if (this.itemType == 'canEquip') {
+			for (var i=0; i < EquipSlot.length; i++) {
+				if (this.type && this.type[1] == EquipCmd[i]) {
+					if ($gameVariables.value(EquipVar[i]) > 0 && $dataItems[$gameVariables.value(EquipVar[i])]) {
+						$gameParty.gainItem($dataItems[$gameVariables.value(EquipVar[i])],1);
+					}			
+					$gameVariables.setValue(EquipVar[i],this._itemList._data[this._itemList.index()].id);
+					if (this.type[1] == EquipCmd[0]) {
+						$toolCat[0] = Number(this.type[2]);
+						$toolCat[1] = Number(checkInvVar.exec(this._itemList._data[this._itemList.index()].note)[1]);
+					}
+					if (this.type[1] == EquipCmd[1]) {
+						$gameActors.actor(1).setCharacterImage(this.charImg,this.charIndex);
+						$gamePlayer.refresh();
+					}
+				}
 			}
 		}
 	}
@@ -247,8 +290,11 @@ Scene_InventoryAdvanced.prototype.cmdEquip = function() {
 
 Scene_InventoryAdvanced.prototype.cmdClear = function() {
 	if (this._itemEquip.index() != 1) {
-		$gameParty.gainItem($dataItems[$gameVariables.value(EquipVar[this._itemEquip.index()])],1);
+		if (!$gameParty.hasItem($dataItems[$gameVariables.value(EquipVar[this._itemEquip.index()])],false))
+			$gameParty.gainItem($dataItems[$gameVariables.value(EquipVar[this._itemEquip.index()])],1);
 		$gameVariables.setValue(EquipVar[this._itemEquip.index()],0);
+		$toolCat[0] = null;
+		$toolCat[1] = null;
 	}
 		this._itemList.refresh();
 		this._itemEquip.refresh();
@@ -415,8 +461,6 @@ Window_InvAdvHelp.prototype.drawAllItems = function(item,img,index) {
 				$gameVariables.setValue(Number(checkInvVar.exec(item.note)[1]),this.maxHP);
 			}
 			this.percent = (this.hp/this.maxHP);
-			//this.drawGauge(this.width-150,-13,80,this.percent,"#1ce314","#2eed26");
-			//this.drawGauge(this.width-150,-7,80,this.percent,"#1ce314","#2eed26");
 			if (this.percent == 0) {
 				this.itemStatus = "Đã hỏng";
 				this.colorStatus = "#fc4949";
@@ -434,7 +478,6 @@ Window_InvAdvHelp.prototype.drawAllItems = function(item,img,index) {
 			this.contents.fontSize = 18;
 			this.changeTextColor(this.colorStatus);
 			this.drawText(this.itemStatus,72+this.textWidth(item.name),2,this.width-this.padding*2,"left");
-			console.log(this.percent);
 		}
 	}
 }
@@ -515,7 +558,8 @@ Window_InvAdvEquipCmd.prototype.constructor = Window_InvAdvEquipCmd;
 
 Window_InvAdvEquipCmd.prototype.initialize = function() {
     Window_Command.prototype.initialize.call(this, 0, 0);
-    this.updatePlacement();
+	this.updatePlacement();
+	this.cmdName = '';
 };
 
 Window_InvAdvEquipCmd.prototype.updatePlacement = function() {
@@ -523,12 +567,18 @@ Window_InvAdvEquipCmd.prototype.updatePlacement = function() {
     this.y = 0;
 };
 
+Window_InvAdvEquipCmd.prototype.setName = function(name) {
+	this.cmdName = name;
+}
+
 Window_InvAdvEquipCmd.prototype.makeCommandList = function() {
-    this.addCommand('Trang bị',   'equip');
+    this.addCommand(this.cmdName,   'equip');
     this.addCommand('Thôi',   'cancel');
 };
 
-Window_InvAdvEquipCmd.prototype.processOk = function() {
-    //Window_InvAdvEquipCmd._lastCommandSymbol = this.currentSymbol();
-    Window_Command.prototype.processOk.call(this);
-};
+Window_InvAdvEquipCmd.prototype.refresh = function() {
+	this.clearCommandList();
+	this.makeCommandList();
+    Window_Command.prototype.refresh.call(this);
+}
+})();
