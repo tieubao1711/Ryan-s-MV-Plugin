@@ -1,5 +1,5 @@
 //=============================================================================
-// RYAN INVENTORY ADVANCED - Version 1.2
+// RYAN INVENTORY ADVANCED - Version 1.3
 //=============================================================================
 
 /*:
@@ -22,7 +22,7 @@
 * --------------------------------------------------------------------------------
 * Credit tranxuanquang nếu bạn sử dụng trong dự án.
 * --------------------------------------------------------------------------------
-* Chỉnh sửa lần cuối 18/02/2020
+* Chỉnh sửa lần cuối 19/02/2020
 * --------------------------------------------------------------------------------
 * Trong "Item -> Notetag". Sử dụng các tag sau:
 * --------------------------------------------------------------------------------
@@ -214,13 +214,27 @@ Scene_InventoryAdvanced.prototype.update = function(){
 Scene_InventoryAdvanced.prototype.onOk = function() {
 	this.type = checkInvType.exec(this._itemList._data[this._itemList.index()].note);
 	if (this.type && (this.type[1] == EquipCmd[0] || this.type[1] == EquipCmd[1] || this.type[1] == EquipCmd[2])) {
-		this.okProcessor('Trang bị');
-		this.itemType = 'canEquip';
+		for (var i=0; i < EquipSlot.length; i++) {
+			if (this.type && this.type[1] == EquipCmd[i]) {
+				if ($gameVariables.value(EquipVar[i]) > 0 && $dataItems[$gameVariables.value(EquipVar[i])]) {
+					$gameParty.gainItem($dataItems[$gameVariables.value(EquipVar[i])],1);
+				}			
+				$gameVariables.setValue(EquipVar[i],this._itemList._data[this._itemList.index()].id);
+				if (this.type[1] == EquipCmd[0]) {
+					$toolCat[0] = Number(this.type[2]);
+					$toolCat[1] = Number(checkInvVar.exec(this._itemList._data[this._itemList.index()].note)[1]);
+				}
+				if (this.type[1] == EquipCmd[1]) {
+					$gameActors.actor(1).setCharacterImage(this.charImg,this.charIndex);
+					$gamePlayer.refresh();
+				}
+			}
+		}
+		this.EquipProcessor();
 	}
 	else {
 		if (this._itemList._data[this._itemList.index()].consumable) {
 			this.okProcessor('Sử dụng');
-			this.itemType = 'canBuff';
 		}
 		else {
 			this._itemList.activate();
@@ -234,8 +248,6 @@ Scene_InventoryAdvanced.prototype.okProcessor = function(nameCmd) {
 	this._equipcmd.y = this._itemList.y + this._itemList.itemRect(this._itemList.index())['y'] + 40;
 	this._itemList.deactivate();
 	this._itemEquip.deactivate();
-	this._equipcmd.setName(nameCmd);
-	this._equipcmd.refresh();
 	this._equipcmd.activate();
 	this._equipcmd.select(0);
 	this._equipcmd.show();
@@ -255,34 +267,16 @@ Scene_InventoryAdvanced.prototype.onCancel = function() {
 }
 
 Scene_InventoryAdvanced.prototype.cmdEquip = function() {
-	$gameParty.loseItem(this._itemList._data[this._itemList.index()],1);
-	if (this.itemType == 'canBuff') {
-		if (this._itemList._data[this._itemList.index()].effects && this._itemList._data[this._itemList.index()].effects[0]['code'])
-			if (this._itemList._data[this._itemList.index()].effects[0]['code'] == 44) {
-				$gameTemp.reserveCommonEvent(this._itemList._data[this._itemList.index()].effects[0]['dataId']); 
-				SceneManager.pop();
-			}
-	}
-	else {
-		if (this.itemType == 'canEquip') {
-			for (var i=0; i < EquipSlot.length; i++) {
-				if (this.type && this.type[1] == EquipCmd[i]) {
-					if ($gameVariables.value(EquipVar[i]) > 0 && $dataItems[$gameVariables.value(EquipVar[i])]) {
-						$gameParty.gainItem($dataItems[$gameVariables.value(EquipVar[i])],1);
-					}			
-					$gameVariables.setValue(EquipVar[i],this._itemList._data[this._itemList.index()].id);
-					if (this.type[1] == EquipCmd[0]) {
-						$toolCat[0] = Number(this.type[2]);
-						$toolCat[1] = Number(checkInvVar.exec(this._itemList._data[this._itemList.index()].note)[1]);
-					}
-					if (this.type[1] == EquipCmd[1]) {
-						$gameActors.actor(1).setCharacterImage(this.charImg,this.charIndex);
-						$gamePlayer.refresh();
-					}
-				}
-			}
+	if (this._itemList._data[this._itemList.index()].effects && this._itemList._data[this._itemList.index()].effects[0])
+		if (this._itemList._data[this._itemList.index()].effects[0]['code'] == 44) {
+			$gameTemp.reserveCommonEvent(this._itemList._data[this._itemList.index()].effects[0]['dataId']); 
+			SceneManager.pop();
 		}
-	}
+	this.EquipProcessor();
+}
+
+Scene_InventoryAdvanced.prototype.EquipProcessor = function() {
+	$gameParty.loseItem(this._itemList._data[this._itemList.index()],1);
 	this._itemList.deselect();
 	this._itemEquip.refresh();
 	this._itemList.refresh();
@@ -560,7 +554,6 @@ Window_InvAdvEquipCmd.prototype.constructor = Window_InvAdvEquipCmd;
 Window_InvAdvEquipCmd.prototype.initialize = function() {
     Window_Command.prototype.initialize.call(this, 0, 0);
 	this.updatePlacement();
-	this.cmdName = '';
 };
 
 Window_InvAdvEquipCmd.prototype.updatePlacement = function() {
@@ -568,18 +561,8 @@ Window_InvAdvEquipCmd.prototype.updatePlacement = function() {
     this.y = 0;
 };
 
-Window_InvAdvEquipCmd.prototype.setName = function(name) {
-	this.cmdName = name;
-}
-
 Window_InvAdvEquipCmd.prototype.makeCommandList = function() {
-    this.addCommand(this.cmdName,   'equip');
+    this.addCommand('Sử dụng',   'equip');
     this.addCommand('Thôi',   'cancel');
 };
-
-Window_InvAdvEquipCmd.prototype.refresh = function() {
-	this.clearCommandList();
-	this.makeCommandList();
-    Window_Command.prototype.refresh.call(this);
-}
 })();
