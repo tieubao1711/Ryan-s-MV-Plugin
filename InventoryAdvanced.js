@@ -1,5 +1,5 @@
 //=============================================================================
-// RYAN INVENTORY ADVANCED - Version 1.3
+// RYAN INVENTORY ADVANCED - Version 1.4
 //=============================================================================
 
 /*:
@@ -22,7 +22,7 @@
 * --------------------------------------------------------------------------------
 * Credit tranxuanquang nếu bạn sử dụng trong dự án.
 * --------------------------------------------------------------------------------
-* Chỉnh sửa lần cuối 19/02/2020
+* Chỉnh sửa lần cuối 20/02/2020
 * --------------------------------------------------------------------------------
 * Trong "Item -> Notetag". Sử dụng các tag sau:
 * --------------------------------------------------------------------------------
@@ -61,6 +61,18 @@ var checkInvHP = /<invHP\s*:\s*(\d+)>/i;
 var checkInvVar = /<invVar\s*:\s*(\d+)>/i;
 var checkInvChar = /<invChar\s*:\s*(.*),(.*)>/
 
+_invadv_scene_map_update = Scene_Map.prototype.update;
+Scene_Map.prototype.update = function() {
+    _invadv_scene_map_update.call(this);
+	if (!this.loadVar) {
+		this.loadVar = true;
+		if ($gameVariables.value(EquipVar[0])) {
+			$toolCat[0] = $gameVariables.value(EquipVar[0]);
+			$toolCat[1] = Number(checkInvVar.exec($dataItems[$toolCat[0]].note)[1]);
+		}
+	}
+}
+
 // Game_Interpreter
 var _Game_InvAdv_pluginCommand = Game_Interpreter.prototype.pluginCommand;
 Game_Interpreter.prototype.pluginCommand = function(command, args) {
@@ -86,7 +98,7 @@ Scene_InventoryAdvanced.prototype = Object.create(Scene_ItemBase.prototype);
 Scene_InventoryAdvanced.prototype.constructor = Scene_InventoryAdvanced;
 
 Scene_InventoryAdvanced.prototype.initialize = function() {
-    Scene_ItemBase.prototype.initialize.call(this);
+	Scene_ItemBase.prototype.initialize.call(this);
 };
 
 Scene_InventoryAdvanced.prototype.create = function() {
@@ -220,6 +232,7 @@ Scene_InventoryAdvanced.prototype.onOk = function() {
 					$gameParty.gainItem($dataItems[$gameVariables.value(EquipVar[i])],1);
 				}			
 				$gameVariables.setValue(EquipVar[i],this._itemList._data[this._itemList.index()].id);
+				SaveVariable();
 				if (this.type[1] == EquipCmd[0]) {
 					$toolCat[0] = Number(this.type[2]);
 					$toolCat[1] = Number(checkInvVar.exec(this._itemList._data[this._itemList.index()].note)[1]);
@@ -288,6 +301,7 @@ Scene_InventoryAdvanced.prototype.cmdClear = function() {
 		if (!$gameParty.hasItem($dataItems[$gameVariables.value(EquipVar[this._itemEquip.index()])],false))
 			$gameParty.gainItem($dataItems[$gameVariables.value(EquipVar[this._itemEquip.index()])],1);
 		$gameVariables.setValue(EquipVar[this._itemEquip.index()],0);
+		SaveVariable();
 		$toolCat[0] = null;
 		$toolCat[1] = null;
 	}
