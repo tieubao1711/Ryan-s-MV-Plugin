@@ -84,6 +84,7 @@ Game_Interpreter.prototype.pluginCommand = function(command, args) {
 				break;
 			case 'close':
 				SceneManager.pop();
+				window.Android.CloseInventory();
 				break;
 		}
     }
@@ -276,6 +277,7 @@ Scene_InventoryAdvanced.prototype.onCancel = function() {
 	}
 	else {
 		SceneManager.pop();
+		window.Android.CloseInventory();
 	}
 }
 
@@ -284,6 +286,7 @@ Scene_InventoryAdvanced.prototype.cmdEquip = function() {
 		if (this._itemList._data[this._itemList.index()].effects[0]['code'] == 44) {
 			$gameTemp.reserveCommonEvent(this._itemList._data[this._itemList.index()].effects[0]['dataId']); 
 			SceneManager.pop();
+			window.Android.CloseInventory();
 		}
 	this.EquipProcessor();
 }
