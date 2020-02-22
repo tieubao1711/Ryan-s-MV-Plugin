@@ -169,6 +169,7 @@ Scene_InventoryAdvanced.prototype.update = function(){
 			if (checkInvType.exec(this.checkAll[i].note)) {
 				if ($gameParty.numItems(this.checkAll[i]) > 1) {
 					$gameParty.loseItem(this.checkAll[i],$gameParty.numItems(this.checkAll[i])-1);
+                                        SaveSwitchAndItemAndVariable()
 				}
 			}
 		}
@@ -233,7 +234,7 @@ Scene_InventoryAdvanced.prototype.onOk = function() {
 					$gameParty.gainItem($dataItems[$gameVariables.value(EquipVar[i])],1);
 				}			
 				$gameVariables.setValue(EquipVar[i],this._itemList._data[this._itemList.index()].id);
-				SaveVariable();
+				
 				if (this.type[1] == EquipCmd[0]) {
 					$toolCat[0] = Number(this.type[2]);
 					$toolCat[1] = Number(checkInvVar.exec(this._itemList._data[this._itemList.index()].note)[1]);
@@ -293,6 +294,7 @@ Scene_InventoryAdvanced.prototype.cmdEquip = function() {
 
 Scene_InventoryAdvanced.prototype.EquipProcessor = function() {
 	$gameParty.loseItem(this._itemList._data[this._itemList.index()],1);
+        SaveSwitchAndItemAndVariable()
 	this._itemList.deselect();
 	this._itemEquip.refresh();
 	this._itemList.refresh();
