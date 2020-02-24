@@ -67,7 +67,7 @@ Scene_Map.prototype.update = function() {
 	if (!this.loadVar) {
 		this.loadVar = true;
 		if ($gameVariables.value(EquipVar[0])) {
-			$toolCat[0] = $gameVariables.value(EquipVar[0]);
+			$toolCat[0] = Number(checkInvType.exec($dataItems[$gameVariables.value(EquipVar[0])].note));
 			$toolCat[1] = Number(checkInvVar.exec($dataItems[$toolCat[0]].note)[1]);
 		}
 	}
