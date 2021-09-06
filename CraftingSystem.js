@@ -54,12 +54,14 @@
 * <cooking:TEXT> hoặc <crafting:TEXT>
 * <ingredients:ID,ID,...>
 * <amounts:AMOUNT,AMOUNT,...>
+* <gold:GOLD>
 * <lvl:LEVEL>
 * <gainEXP:EXP>
 *
 * TEXT - bạn có thể đặt bất cứ tên gì, nên đặt có hệ thống để dễ chia nhóm
 * ID - ID của các item nguyên liệu
 * AMOUNT - số lượng tương ứng của các item trên
+* GOLD - số tiền cần để chế tạo/ nấu. nếu ko cần thì để 0
 * LEVEL - Cấp độ Craft/Cook yêu cầu
 * EXP - lượng EXP nhận được sau khi Craft/Cook
 *
